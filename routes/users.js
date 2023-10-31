@@ -28,7 +28,8 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   if (req.body.userId == req.params.id || req.body.isAdmin) {
     try {
-      await User.findByIdAndDelete({_id: req.params.id});
+      const id = req.params.id.toString().trim();
+      await User.findOneAndDelete({_id: id})
       res.status(200).json("Account has been deleted");
     } catch (err) {
       return res.status(500).json(err);
@@ -51,6 +52,26 @@ router.get("/", async (req, res) => {
     } catch (err) {
         res.status(500).json(err)
     }
+})
+
+//get friends
+router.get("/friends/:userId", async (req, res)=>{
+  try {
+    const user = await User.findById(req.params.userId);
+    const friends = await Promise.all(
+      user.followings.map(friendId=>{
+        return User.findById(friendId)
+      })
+    )
+    let friendList = [];
+    friends.map(friend=>{
+      const {_id, username, profilePicture} = friend;
+      friendList.push({_id:username, username, profilePicture});
+    })
+    res.status(200).json(friendList);
+  } catch (error) {
+    res.status(500).json(error)
+  }
 })
 
 //follow a user
